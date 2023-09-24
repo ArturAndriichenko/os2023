@@ -21,7 +21,7 @@ main(int argc, char *argv[])
       fprintf(2, "Write error!\n");
       exit(1);
     }
-
+    
     wait(0);
     if(read(p[0], child_msg, 2) != 2) {
       fprintf(2, "Read error!\n");
@@ -29,7 +29,6 @@ main(int argc, char *argv[])
     }
 
     printf("%d: recieved pong\n", getpid());
-    printf("The string obtained from the child is: %s", child_msg);
 
   } else if(pid > 0) {
     char parent_msg[2];
@@ -40,7 +39,6 @@ main(int argc, char *argv[])
     }
     
     printf("%d: recieved ping\n", getpid());
-    printf("The string obtained from the parent is: %s\n", parent_msg);
 
     if(write(p[1], "c\n", 2) != 2) {
       fprintf(2, "Write error!\n");

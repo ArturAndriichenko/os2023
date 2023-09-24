@@ -72,7 +72,7 @@ main(int argc, char *argv[])
   
   int pid = fork();
   
-  if(pid == 0) {
+  if(pid > 0) {
     close(p[0]);
 
     for(int i = 2; i < 36; i++) {
@@ -84,7 +84,7 @@ main(int argc, char *argv[])
     close(p[1]);
     wait(0);
 
-  } else if(pid > 0) {
+  } else if(pid == 0) {
     close(p[1]);
     right_neighbour(p[0]);
   } else {

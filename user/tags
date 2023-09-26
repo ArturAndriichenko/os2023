@@ -1,0 +1,4 @@
+Mfind	find.c	/^main(int argc, char *argv[]) {$/
+compareFiles	find.c	/^compareFiles(const char* file1, const char* file2)/
+find	find.c	/^find(char* path, char* object) {$/
+fmtname	find.c	/^fmtname(char *path) {$/

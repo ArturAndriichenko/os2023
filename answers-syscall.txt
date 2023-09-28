@@ -1,0 +1,4 @@
+1. usertrap()
+2. 7 - sys_exec
+
+4. lw, a3

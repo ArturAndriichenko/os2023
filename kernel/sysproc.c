@@ -5,6 +5,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -46,6 +47,23 @@ sys_sbrk(void)
   if(growproc(n) < 0)
     return -1;
   return addr;
+}
+
+uint64
+sys_sysinfo(void)
+{
+	struct sysinfo si;
+	struct proc *p = myproc();
+	uint64 addr;
+
+	argaddr(0, &addr);
+	si.freemem = free_memory_size();
+	si.nproc = proc_count();
+
+	if(copyout(p->pagetable, addr, (char*)&si, sizeof(si)) < 0)
+		return -1;
+
+	return 0;
 }
 
 uint64

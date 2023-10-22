@@ -449,3 +449,37 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
+void
+vmprint(pagetable_t pt)
+{
+	printf("page table %p\n", pt);
+	char dots[] = " ..";
+	doprint(pt, dots);
+}
+
+void
+doprint(pagetable_t pt, char* dots)
+{
+	for(int i = 0; i < 512; i++) {
+		pte_t pte = pt[i];
+		if(pte & PTE_V) {
+			printf("%s%d: pte %p pa %p\n", dots, i, pte, PTE2PA(pte));
+			if((pte & (PTE_R|PTE_W|PTE_X)) == 0) {
+				int s = strlen(dots);
+				char res[s + 4];
+				const char* moreDots = " ..";
+				for(int i = 0; i < s + 3; i++) {
+					if(i < s)
+						res[i] = dots[i];
+					else {
+						res[i] = moreDots[i-s];
+					}
+				}
+				res[s + 3] = '\0';
+				doprint((pagetable_t)PTE2PA(pte), res);
+			}
+		}
+	}
+
+}

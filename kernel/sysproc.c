@@ -28,6 +28,29 @@ sys_fork(void)
 }
 
 uint64
+sys_sigreturn(void)
+{
+	struct proc *p = myproc();
+	uint64* rest_ptr = &p->restore->kernel_satp;
+	uint64* trapframe_ptr = &p->trapframe->kernel_satp;
+	for(int i = 0; i < 281; i+=8)
+			*trapframe_ptr++ = *rest_ptr++;
+	p->allowed = 1;
+	return 0;
+}
+
+uint64
+sys_sigalarm(void)
+{
+	struct proc *p = myproc();
+
+	argint(0, &p->exptiks);
+	argaddr(1, &p->hdlr);
+
+	return 0;
+}
+
+uint64
 sys_wait(void)
 {
   uint64 p;

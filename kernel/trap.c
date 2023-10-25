@@ -77,8 +77,22 @@ usertrap(void)
     exit(-1);
 
   // give up the CPU if this is a timer interrupt.
-  if(which_dev == 2)
-    yield();
+  if(which_dev == 2) {
+    if(p->exptiks) {
+			p->tiks++;
+			if(p->tiks - p->lasttik >= p->exptiks && p->allowed) {
+				uint64* rest_ptr = &p->restore->kernel_satp;
+				uint64* trapframe_ptr = &p->trapframe->kernel_satp;
+				for(int i = 0; i < 281; i+=8)
+					*rest_ptr++ = *trapframe_ptr++;
+				p->trapframe->epc = p->hdlr;
+				p->lasttik = p->tiks;
+				p->allowed = 0;
+			}	
+		}
+					
+		yield();
+	}
 
   usertrapret();
 }

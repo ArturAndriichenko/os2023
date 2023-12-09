@@ -15,7 +15,8 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "fcntl.h"
-
+static struct inode*
+create(char *path, short type, short major, short minor);
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
@@ -119,6 +120,32 @@ sys_fstat(void)
   return filestat(f, st);
 }
 
+uint64
+sys_symlink(void)
+{
+	char target[MAXPATH], path[MAXPATH];
+	struct inode *ip;
+
+	if(argstr(0, target, MAXPATH) < 0 || argstr(1, path, MAXPATH) < 0)
+		return -1;
+
+	begin_op();
+	if((ip = create(path, T_SYMLINK, 0, 0)) == 0){
+		end_op();
+		return -1;
+	}
+	
+	int len = strlen(target);
+	writei(ip, 0, (uint64)&len, 0, sizeof(int));
+	writei(ip, 0, (uint64)target, sizeof(int), len + 1);
+	
+	iunlockput(ip);
+	iupdate(ip);
+	end_op();
+
+	return 0;
+}
+
 // Create the path new as a link to the same inode as old.
 uint64
 sys_link(void)
@@ -154,7 +181,7 @@ sys_link(void)
     goto bad;
   }
   iunlockput(dp);
-  iput(ip);
+	iput(ip);
 
   end_op();
 
@@ -256,6 +283,9 @@ create(char *path, short type, short major, short minor)
   if((ip = dirlookup(dp, name, 0)) != 0){
     iunlockput(dp);
     ilock(ip);
+		if(type == T_SYMLINK){
+			return ip;
+		}
     if(type == T_FILE && (ip->type == T_FILE || ip->type == T_DEVICE))
       return ip;
     iunlockput(ip);
@@ -327,6 +357,37 @@ sys_open(void)
       end_op();
       return -1;
     }
+		if((ip->type == T_SYMLINK) && !(omode & O_NOFOLLOW)){
+			int count = 0;
+
+			while(ip->type == T_SYMLINK && count < 10) {			
+				int len = 0;
+				ilock(ip);	
+				readi(ip, 0, (uint64)&len, 0, sizeof(int));
+				if(len < 0 || len > MAXPATH){
+					iunlockput(ip);
+					end_op();
+					return -1;
+				}
+				else if(len == 0){
+					iunlockput(ip);
+					break;
+				}
+				readi(ip, 0, (uint64)path, sizeof(int), len + 1);
+				iunlockput(ip);
+				
+				if((ip = namei(path)) == 0){
+					end_op();
+					return -1;
+				}
+				count++;
+			}
+
+			if(count >= 10){
+				end_op();
+				return -1;
+			}
+		}
     ilock(ip);
     if(ip->type == T_DIR && omode != O_RDONLY){
       iunlockput(ip);
